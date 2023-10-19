@@ -5,6 +5,8 @@ import com.example.securityjwtpractice.user.Role;
 import com.example.securityjwtpractice.user.User;
 import com.example.securityjwtpractice.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,8 @@ public class AuthenticationService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;  //password have to be encoded when saved
     private final JwtService jwtService;
+
+    private final AuthenticationManager authenticationManager;
 
     //allow to create user and save it to db
     //return generated token
@@ -40,6 +44,21 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        return null;
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+
+        //username and password are correct
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow();
+
+        //return AuthenticationResponse
+        var jwtToken = jwtService.generateToken(user);
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .build();
     }
 }
